@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UrbanCart | Demo Store</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f5f6f8;color:#202534}
+header{background:#18243a;color:white;padding:22px 6%;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.logo{font-size:27px;font-weight:800;letter-spacing:-1px}
+.logo span{color:#8de0bb}
+button{border:0;border-radius:9px;padding:12px 17px;cursor:pointer;font-weight:bold}
+.cart-button{background:#8de0bb;color:#142439}
+.hero{padding:48px 6%;background:#e2f2eb}
+.hero p{color:#52635c;line-height:1.6}
+h1{font-size:clamp(30px,5vw,48px);margin:8px 0}
+main{padding:30px 6%}
+.products{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px}
+.card{background:white;border-radius:16px;padding:18px;box-shadow:0 3px 15px #18243a0c}
+.product-art{height:145px;border-radius:12px;background:#edf1f6;display:grid;place-items:center;font-size:66px}
+.price{font-size:20px;font-weight:bold;margin:12px 0}
+.add{background:#18243a;color:white;width:100%;margin-top:8px}
+section{margin:30px 0}
+.panel{background:white;padding:22px;border-radius:16px;margin-top:15px}
+.cart-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #eee;flex-wrap:wrap}
+input{display:block;width:100%;padding:12px;border:1px solid #ccd1da;border-radius:8px;margin:8px 0 15px}
+.checkout{background:#147653;color:white}
+.event{padding:9px 0;border-bottom:1px solid #e7e7e7;font-size:13px;overflow-wrap:anywhere}
+.notice{font-size:13px;color:#626c7b;line-height:1.6}
+footer{padding:25px 6%;color:#667085}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Urban<span>Cart</span></div>
+  <button class="cart-button" onclick="showCart()">Cart (<span id="cartCount">0</span>)</button>
+</header>
+
+<div class="hero">
+  <p>THE EVERYDAY EDIT · TRAINING STORE</p>
+  <h1>Good finds.<br>Everyday prices.</h1>
+  <p>Explore our fictional products and practise the complete e-commerce tracking journey.</p>
+  <strong>Demo store — no real purchases or payments.</strong>
+</div>
+
+<main>
+  <h2>Featured products</h2>
+  <div class="products" id="products"></div>
+<div id="productDetails" class="panel" hidden></div>
+
+  <section id="cartSection">
+    <h2>Your shopping cart</h2>
+    <div class="panel" id="cartContents">Your cart is empty. Add a product to begin.</div>
+  </section>
+
+  <section id="checkoutSection">
+    <h2>Demo checkout</h2>
+    <div class="panel">
+      <p class="notice">Use fictional details only. This form does not collect or send your information to a server.</p>
+      <form id="checkoutForm">
+        <label for="customerName">Demo name</label>
+        <input id="customerName" placeholder="Example Customer" required>
+        <label for="customerEmail">Demo email</label>
+        <input id="customerEmail" type="email" placeholder="demo@example.com" required>
+        <button class="checkout" type="submit">Place demo order</button>
+      </form>
+      <div id="orderMessage" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tracking event inspector</h2>
+    <p class="notice">Watch events appear as you browse, add products and complete the demo checkout.</p>
+    <div class="panel" id="eventLog"><p>No events yet.</p></div>
+    <button onclick="clearEventLog()">Clear visible log</button>
+  </section>
+</main>
+
+<footer>
+  UrbanCart training project · Fictional products · No real payment processing
+</footer>
+
+<script>
+window.dataLayer = window.dataLayer || [];
+
+const products = [
+  {id:"UC-101",name:"Everyday Sneakers",price:2499,emoji:"👟"},
+  {id:"UC-102",name:"Canvas Backpack",price:1599,emoji:"🎒"},
+  {id:"UC-103",name:"Classic T-Shirt",price:799,emoji:"👕"}
+];
+
+let cart = [];
+let eventNumber = 0;
+
+function track(eventName, details = {}) {
+  const eventData = {
+    event: eventName,
+    ...details
+  };
+  window.dataLayer.push(eventData);
+  eventNumber++;
+  const log = document.getElementById("eventLog");
+  if (eventNumber === 1) log.innerHTML = "";
+  const row = document.createElement("div");
+  row.className = "event";
+  row.textContent = JSON.stringify(eventData, null, 2);
+  log.prepend(row);
+  console.log("UrbanCart tracking event:", eventData);
+}
+
+function formatPrice(amount) {
+  return new Intl.NumberFormat("en-IN", {
+    style:"currency",currency:"INR",maximumFractionDigits:0
+  }).format(amount);
+}
+
+function itemData(product, quantity = 1) {
+  return {
+    item_id:product.id,
+    item_name:product.name,
+    price:product.price,
+    quantity
+  };
+}
+
+function renderProducts() {
+  document.getElementById("products").innerHTML = products.map(p => `
+    <article class="card">
+      <div class="product-art" aria-hidden="true">${p.emoji}</div>
+      <h3>${p.name}</h3>
+      <div class="price">${formatPrice(p.price)}</div>
+      <button class="add" onclick="addToCart('${p.id}')">Add to cart</button>
+      <button style="width:100%;margin-top:7px" onclick="viewProduct('${p.id}')">View product</button>
+    </article>
+  `).join("");
+}
+
+
+function viewProduct(id) {
+  const product = products.find(p => p.id === id);
+  if (!product) return;
+
+  // Send the product-view tracking event
+  track("view_item", {
+    currency: "INR",
+    value: product.price,
+    items: [itemData(product)]
+  });
+
+  // Display visible product details
+  const details = document.getElementById("productDetails");
+  details.hidden = false;
+  details.innerHTML = `
+    <h2>${product.emoji} ${product.name}</h2>
+    <p>Product ID: ${product.id}</p>
+    <h3>${formatPrice(product.price)}</h3>
+    <p>A great everyday pick from the UrbanCart demo collection.</p>
+    <button class="add" id="detailsAdd">Add to cart</button>
+    <button id="detailsClose">Close details</button>
+  `;
+
+  document.getElementById("detailsAdd").onclick = () => {
+    addToCart(product.id);
+    details.hidden = true;
+  };
+
+  document.getElementById("detailsClose").onclick = () => {
+    details.hidden = true;
+  };
+
+  details.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+
+function addToCart(id) {
+  const product = products.find(p => p.id === id);
+  const existing = cart.find(item => item.id === id);
+  if (existing) existing.quantity++;
+  else cart.push({...product,quantity:1});
+
+  track("add_to_cart", {
+    currency:"INR",
+    value:product.price,
+    items:[itemData(product)]
+  });
+  renderCart();
+}
+
+function removeFromCart(id) {
+  const item = cart.find(p => p.id === id);
+  if (!item) return;
+  track("remove_from_cart", {
+    currency:"INR",
+    value:item.price * item.quantity,
+    items:[itemData(item,item.quantity)]
+  });
+  cart = cart.filter(p => p.id !== id);
+  renderCart();
+}
+
+function cartValue() {
+  return cart.reduce((sum,item) => sum + item.price * item.quantity,0);
+}
+
+function showCart() {
+  document.getElementById("cartSection").scrollIntoView({behavior:"smooth"});
+}
+
+function renderCart() {
+  const count = cart.reduce((sum,item) => sum + item.quantity,0);
+  document.getElementById("cartCount").textContent = count;
+  const box = document.getElementById("cartContents");
+
+  if (!cart.length) {
+    box.textContent = "Your cart is empty. Add a product to begin.";
+    return;
+  }
+
+  box.innerHTML = "";
+  cart.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "cart-row";
+    const name = document.createElement("span");
+    name.textContent = `${item.emoji} ${item.name} × ${item.quantity} — ${formatPrice(item.price * item.quantity)}`;
+    const remove = document.createElement("button");
+    remove.textContent = "Remove";
+    remove.onclick = () => removeFromCart(item.id);
+    row.append(name,remove);
+    box.appendChild(row);
+  });
+
+  const total = document.createElement("h3");
+  total.textContent = "Subtotal: " + formatPrice(cartValue());
+  box.appendChild(total);
+}
+
+document.getElementById("checkoutForm").addEventListener("submit",function(e) {
+  e.preventDefault();
+
+  if (!cart.length) {
+    document.getElementById("orderMessage").textContent =
+      "Please add a product before checkout.";
+    return;
+  }
+
+  const orderId = "DEMO-" + Date.now();
+  const total = cartValue();
+  const purchasedItems = cart.map(item => itemData(item,item.quantity));
+
+  track("begin_checkout", {
+    currency:"INR",
+    value:total,
+    items:purchasedItems
+  });
+
+  track("purchase", {
+    transaction_id:orderId,
+    currency:"INR",
+    value:total,
+    tax:0,
+    shipping:0,
+    items:purchasedItems
+  });
+
+  document.getElementById("orderMessage").textContent =
+    "Success! Demo order " + orderId + " · Total " + formatPrice(total) +
+    ". No payment was taken.";
+
+  cart = [];
+  renderCart();
+  document.getElementById("orderMessage").scrollIntoView({behavior:"smooth"});
+});
+
+function clearEventLog() {
+  document.getElementById("eventLog").innerHTML = "<p>No visible events. New events will appear here.</p>";
+  eventNumber = 0;
+}
+
+renderProducts();
+renderCart();
+track("demo_page_view", {
+  page_title:"UrbanCart Demo Store",
+  page_location:window.location.href
+});
+</script>
+</body>
+</html>
