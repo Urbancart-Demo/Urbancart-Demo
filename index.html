@@ -99,7 +99,7 @@ window.dataLayer = window.dataLayer || [];
 const products = [
   {id:"UC-101",name:"Everyday Sneakers",price:2499,emoji:"👟"},
   {id:"UC-102",name:"Canvas Backpack",price:1599,emoji:"🎒"},
-  {id:"UC-103",name:"Classic T-Shirt",price:799,emoji:"👕"}
+  {id:"UC-103",name:"Plain White Cotton T-Shirt",price:799,emoji:"👕"}
 ];
 
 let cart = [];
@@ -167,7 +167,7 @@ function viewProduct(id) {
     <h2>${product.emoji} ${product.name}</h2>
     <p>Product ID: ${product.id}</p>
     <h3>${formatPrice(product.price)}</h3>
-    <p>A great everyday pick from the UrbanCart demo collection.</p>
+  <p>${product.id === "UC-103" ? "A classic plain white T-shirt made from 100% cotton. A comfortable everyday essential, priced at ₹799." : "A great everyday pick from the UrbanCart demo collection."}</p>
     <button class="add" id="detailsAdd">Add to cart</button>
     <button id="detailsClose">Close details</button>
   `;
